@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">OptoSim 3D</string>
+    <string name="title_activity_main">OptoSim 3D</string>
+    <string name="package_name">com.eyeexam.simulator</string>
+    <string name="custom_url_scheme">com.eyeexam.simulator</string>
+</resources>

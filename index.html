@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OptoSim 3D - The Eye Exam Simulator</title>
+  <meta name="description" content="An interactive 3D clinical simulation of an optometrist's exam room. Manage patients, run diagnostic machinery, and perform subjective refractions.">
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Google Fonts: Orbitron (for tech screens), Outfit (for modern headers), Inter (for readable UI) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Import Map for Three.js (Supports offline Android WebView and browser) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/three.module.js",
+        "three/addons/": "./vendor/three/addons/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- Intro Splash & Main Menu -->
+  <section id="main-menu" class="overlay-screen active">
+    <div class="menu-container">
+      <div class="menu-header">
+        <div class="logo-icon">👁️</div>
+        <h1>OPTO-SIM 3D</h1>
+        <p class="subtitle">The Optometrist clinical simulator</p>
+      </div>
+      
+      <div class="features-preview">
+        <div class="feature-item">
+          <span class="icon">🚶‍♂️</span>
+          <div>
+            <h3>First-Person Navigation</h3>
+            <p>Walk around the clinic using WASD / Arrow keys. Drag mouse to look around.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="icon">🔬</span>
+          <div>
+            <h3>Diagnostic Pre-Testing</h3>
+            <p>Perform objective refraction with the Autorefractor and check pressure with the NCT.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="icon">👓</span>
+          <div>
+            <h3>Subjective Refraction</h3>
+            <p>Sit at the phoropter, ask patient feedback on Lens 1 vs 2, and test Snellen acuity.</p>
+          </div>
+        </div>
+      </div>
+      
+      <button id="btn-start" class="btn btn-primary btn-glowing">START SIMULATION</button>
+    </div>
+  </section>
+
+  <!-- Doctor Selection Screen -->
+  <section id="doctor-select" class="overlay-screen">
+    <div class="selection-container" style="pointer-events: none;">
+      <h2>CHOOSE YOUR CLINICIAN</h2>
+      <p class="section-subtitle">Move mouse over the floating 3D cartridges and click to select</p>
+      
+      <div class="doctor-3d-labels">
+        <div id="lbl-female-doc" class="doc-3d-label">female_doctor</div>
+        <div id="lbl-male-doc" class="doc-3d-label">male_doctor</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Game Canvas Container -->
+  <div id="game-container">
+    <!-- Three.js Canvas -->
+    <div id="canvas-holder"></div>
+
+    <!-- HUD (Heads-Up Display) -->
+    <div id="hud" class="hud-layer hidden">
+      <!-- Top Bar -->
+      <div class="hud-top">
+        <div class="doc-badge">
+          <span id="hud-doc-icon">👨‍⚕️</span>
+          <span id="hud-doc-name">Dr. Carter</span>
+        </div>
+        <div class="objective-panel">
+          <span class="pulse-dot"></span>
+          <div>
+            <div class="label">CURRENT OBJECTIVE</div>
+            <div id="hud-objective-text">Find the patient in the waiting room and introduce yourself.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Crosshair for first-person interaction pointer -->
+      <div id="crosshair" class="crosshair-normal"></div>
+
+      <!-- Dialogue/Subtitle System at the bottom center -->
+      <div id="dialogue-box" class="dialogue-box-layer hidden">
+        <div class="speaker-name" id="speaker-name">Patient</div>
+        <div class="speaker-text" id="speaker-text">"Hello, doctor!"</div>
+        <button id="btn-next-dialogue" class="dialogue-next-arrow">Proceed ➔</button>
+      </div>
+
+      <!-- Interact Toast (Press E or Click to interact) -->
+      <div id="interact-toast" class="interact-toast hidden">
+        <span class="key-cap">Click</span> or <span class="key-cap">E</span> to <span id="interact-action">Interact</span>
+      </div>
+    </div>
+
+    <!-- Machine overlays -->
+    
+    <!-- 1. AUTOREFRACTOR VIEWPORT -->
+    <div id="view-autorefractor" class="machine-overlay hidden">
+      <div class="viewfinder-circle">
+        <!-- Canvas inside viewfinder where we draw the blurry balloon -->
+        <div class="autorefractor-view">
+          <div id="road-background"></div>
+          <div id="balloon-sprite"></div>
+          <div id="camera-noise"></div>
+          <div id="focus-reticle"></div>
+        </div>
+      </div>
+      
+      <div class="control-panel glassmorphic">
+        <h3>AUTOREFRACTOR / KERATOMETER</h3>
+        <p class="panel-hint">Adjust the focus slider until the hot air balloon appears perfectly sharp, then capture the measurement.</p>
+        
+        <div class="control-group">
+          <label for="slider-focus">Focus Ring Dial</label>
+          <div class="slider-wrapper">
+            <span class="unit">Blurry</span>
+            <input type="range" id="slider-focus" min="0" max="100" value="0">
+            <span class="unit">Sharp</span>
+          </div>
+        </div>
+
+        <div class="status-monitor font-orbitron">
+          <div class="row"><span>REF STATUS:</span> <span id="ar-status" class="status-warning">STANDBY</span></div>
+          <div class="row"><span>EST PRESC:</span> <span id="ar-prescription">OD: --.-- OS: --.--</span></div>
+        </div>
+
+        <div class="button-row">
+          <button id="btn-ar-measure" class="btn btn-primary">Capture Measurement</button>
+          <button id="btn-ar-exit" class="btn btn-secondary">Exit Viewfinder</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. NCT (NON-CONTACT TONOMETER) VIEWPORT -->
+    <div id="view-nct" class="machine-overlay hidden">
+      <div class="viewfinder-circle">
+        <div class="nct-view">
+          <div id="nct-pupil"></div>
+          <!-- Aligned Target indicator (controlled by buttons) -->
+          <div id="nct-aligned-ring"></div>
+          <div id="nct-reticle"></div>
+          <div id="nct-puff-flash" class="flash-effect"></div>
+        </div>
+      </div>
+
+      <div class="control-panel glassmorphic">
+        <h3>NON-CONTACT TONOMETER</h3>
+        <p class="panel-hint">Use the controller buttons to align the green circle with the center crosshair, then click Puff to measure pressure.</p>
+
+        <!-- Joystick / Alignment D-Pad -->
+        <div class="alignment-controls">
+          <button id="btn-nct-up" class="btn-arrow">▲</button>
+          <div class="arrow-row-mid">
+            <button id="btn-nct-left" class="btn-arrow">◀</button>
+            <div class="joy-center">🎯</div>
+            <button id="btn-nct-right" class="btn-arrow">▶</button>
+          </div>
+          <button id="btn-nct-down" class="btn-arrow">▼</button>
+        </div>
+
+        <div class="status-monitor font-orbitron">
+          <div class="row"><span>IOP STAT:</span> <span id="nct-status" class="status-warning">NOT READY</span></div>
+          <div class="row"><span>PRESSURE:</span> <span id="nct-pressure">OD: -- mmHg | OS: -- mmHg</span></div>
+        </div>
+
+        <div class="button-row">
+          <button id="btn-nct-puff" class="btn btn-accent" disabled>Trigger Air Puff</button>
+          <button id="btn-nct-exit" class="btn btn-secondary">Exit Viewfinder</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. PHOROPTER / EXAM ROOM BENCH VIEWPORT -->
+    <div id="view-phoropter" class="machine-overlay hidden">
+      <!-- HTML overlay of the phoropter lenses/dial view -->
+      <div class="phoropter-scene">
+        <!-- A preview panel of the Snellen Chart on the far wall -->
+        <div class="chart-screen-preview">
+          <div class="screen-border">
+            <div id="chart-projector-content" class="chart-off">
+              <!-- Dynamically populated letters based on selected Snellen Line -->
+              <div id="chart-letters">SNELLEN PROJECTOR STANDBY</div>
+              <div id="chart-line-lbl">LINE: --</div>
+            </div>
+          </div>
+          <div class="projection-lens"></div>
+        </div>
+        
+        <div class="phoropter-device-mockup">
+          <div class="eyepieces">
+            <div class="eyepiece-lens left-eye"></div>
+            <div class="eyepiece-lens right-eye"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls for refracting -->
+      <div class="control-panel glassmorphic wide-panel">
+        <h3>PHOROPTER & VISUAL ACUITY CONTROL DESK</h3>
+        
+        <div class="phoropter-desk-sections">
+          <!-- Eye & Lens Adjustments -->
+          <div class="desk-sec">
+            <h4>1. Phoropter Lens Selection</h4>
+            
+            <div class="tabs">
+              <button id="btn-tab-od" class="tab-btn active">OD (Right Eye)</button>
+              <button id="btn-tab-os" class="tab-btn">OS (Left Eye)</button>
+            </div>
+            
+            <div class="dial-adjustments">
+              <!-- Sphere Dial -->
+              <div class="dial-control">
+                <span class="dial-label">SPHERE (SPH)</span>
+                <div class="dial-actions">
+                  <button id="btn-sph-dec" class="btn-micro">-</button>
+                  <span id="lbl-sph-val" class="font-orbitron">0.00</span>
+                  <button id="btn-sph-inc" class="btn-micro">+</button>
+                </div>
+              </div>
+
+              <!-- Cylinder Dial -->
+              <div class="dial-control">
+                <span class="dial-label">CYLINDER (CYL)</span>
+                <div class="dial-actions">
+                  <button id="btn-cyl-dec" class="btn-micro">-</button>
+                  <span id="lbl-cyl-val" class="font-orbitron">0.00</span>
+                  <button id="btn-cyl-inc" class="btn-micro">+</button>
+                </div>
+              </div>
+
+              <!-- Axis Dial -->
+              <div class="dial-control">
+                <span class="dial-label">AXIS</span>
+                <div class="dial-actions">
+                  <button id="btn-ax-dec" class="btn-micro">-5°</button>
+                  <span id="lbl-ax-val" class="font-orbitron">180</span>
+                  <button id="btn-ax-inc" class="btn-micro">+5°</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subjective Comparison -->
+          <div class="desk-sec">
+            <h4>2. Subjective Refraction</h4>
+            <p class="panel-hint-mini">Present different lens modifications to ask the patient which is sharper.</p>
+            
+            <div class="comparison-buttons">
+              <button id="btn-present-1" class="btn btn-secondary">Present Option 1</button>
+              <button id="btn-present-2" class="btn btn-secondary">Present Option 2</button>
+            </div>
+            
+            <button id="btn-compare-query" class="btn btn-accent btn-small" style="width: 100%; margin-top: 10px;">
+              Ask: "1 or 2?"
+            </button>
+          </div>
+
+          <!-- Projector Screen controls -->
+          <div class="desk-sec">
+            <h4>3. Snellen Chart Projector</h4>
+            
+            <div class="projector-controls">
+              <button id="btn-projector-power" class="btn btn-secondary">Projector On/Off</button>
+              
+              <div class="line-selector">
+                <label for="select-chart-line">Acuity Line</label>
+                <select id="select-chart-line" disabled>
+                  <option value="200">20/200 Line</option>
+                  <option value="100">20/100 Line</option>
+                  <option value="70">20/70 Line</option>
+                  <option value="50">20/50 Line</option>
+                  <option value="40">20/40 Line</option>
+                  <option value="30">20/30 Line</option>
+                  <option value="25">20/25 Line</option>
+                  <option value="20" selected>20/20 Line</option>
+                  <option value="15">20/15 Line</option>
+                </select>
+              </div>
+            </div>
+            
+            <button id="btn-chart-read" class="btn btn-primary btn-small" style="width: 100%; margin-top: 10px;" disabled>
+              Ask Patient to Read
+            </button>
+          </div>
+        </div>
+
+        <div class="button-row" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+          <button id="btn-exam-finalize" class="btn btn-primary btn-glowing">Finalize & Print Prescription</button>
+          <button id="btn-exam-exit" class="btn btn-secondary">Stand Up</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. CLINICAL FINAL REPORT / RX PRINTER -->
+    <div id="view-report" class="overlay-screen">
+      <div class="report-paper">
+        <div class="printer-feed-glow"></div>
+        <div class="report-header">
+          <div class="report-logo">👁️</div>
+          <div>
+            <h2>METROPOLITAN OPTOMETRIC ASSOCIATES</h2>
+            <p>Clinical Examination Summary & Prescription</p>
+          </div>
+        </div>
+
+        <hr class="report-divider">
+
+        <div class="report-meta">
+          <div class="meta-item"><strong>Date:</strong> <span id="report-date">2026-07-20</span></div>
+          <div class="meta-item"><strong>Clinician:</strong> <span id="report-clinician">Dr. Alex Carter, OD</span></div>
+          <div class="meta-item"><strong>Patient:</strong> <span id="report-patient-name">Arthur Pendelton</span></div>
+        </div>
+
+        <h3>1. PRE-TESTING DIAGNOSTICS</h3>
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Test Type</th>
+              <th>Right Eye (OD)</th>
+              <th>Left Eye (OS)</th>
+              <th>Reference Ranges</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Autorefraction (Objective)</strong></td>
+              <td id="td-ar-od">-2.50 SPH / -0.50 CYL x 180</td>
+              <td id="td-ar-os">-2.00 SPH / -0.25 CYL x 175</td>
+              <td>Estimated correction base</td>
+            </tr>
+            <tr>
+              <td><strong>Intraocular Pressure (NCT)</strong></td>
+              <td id="td-nct-od">15 mmHg</td>
+              <td id="td-nct-os">16 mmHg</td>
+              <td>10 - 21 mmHg (Normal)</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>2. FINAL SUBJECTIVE REFRACTION (SPECTACLE RX)</h3>
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Eye</th>
+              <th>Sphere (SPH)</th>
+              <th>Cylinder (CYL)</th>
+              <th>Axis</th>
+              <th>Acuity Achieved</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>OD (Right Eye)</strong></td>
+              <td id="td-rx-od-sph">-2.50</td>
+              <td id="td-rx-od-cyl">-0.75</td>
+              <td id="td-rx-od-ax">180</td>
+              <td id="td-rx-od-va">20/20</td>
+            </tr>
+            <tr>
+              <td><strong>OS (Left Eye)</strong></td>
+              <td id="td-rx-os-sph">-1.75</td>
+              <td id="td-rx-os-cyl">-0.50</td>
+              <td id="td-rx-os-ax">095</td>
+              <td id="td-rx-os-va">20/20</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="report-evaluation">
+          <h4>Clinical Evaluation & Comparison</h4>
+          <p id="report-evaluation-text">Loading clinician diagnostics...</p>
+        </div>
+
+        <div class="report-signatures">
+          <div class="sig-block">
+            <div class="sig-line" id="report-sig-draw">Dr. Alex Carter</div>
+            <div>Examining Optometrist Signature</div>
+          </div>
+          <div class="sig-block">
+            <div class="sig-line-stamp">APPROVED CLINICALLY</div>
+            <div>Metropolitan Medical Validation</div>
+          </div>
+        </div>
+
+        <button id="btn-report-restart" class="btn btn-primary" style="margin-top: 30px; width: 100%;">START A NEW SHIFT</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Core application logic -->
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>

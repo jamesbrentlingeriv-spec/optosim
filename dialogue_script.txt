@@ -1,0 +1,138 @@
+3D EYE EXAM SIMULATOR - DIALOGUE SCRIPT
+======================================
+This file lists all the lines of spoken dialogue for the Doctor (Clinician) and the Patient.
+Use these lines to record voice assets (e.g. via ElevenLabs) for the simulator.
+
+--------------------------------------------------------------------------------
+1. DOCTOR SELECT SCREEN
+--------------------------------------------------------------------------------
+
+MALE DOCTOR:
+"Hello. I am Dr. Allen Watts. Let's get started."
+
+FEMALE DOCTOR:
+"Hello. I am Dr. Lauren Mays. Let's get started."
+
+
+--------------------------------------------------------------------------------
+2. RECEPTION / GREETING
+--------------------------------------------------------------------------------
+
+RECEPTIONIST (Female Voice):
+"Hello doctor, the patient's ready for you."
+
+DOCTOR (Dr. Allen Watts):
+"Hello! I am Dr. Allen Watts. Let's head back to the pre-testing room for some initial measurements."
+
+DOCTOR (Dr. Lauren Mays):
+"Hello! I am Dr. Lauren Mays. Let's head back to the pre-testing room for some initial measurements."
+
+PATIENT:
+"Sounds good, doctor. Lead the way."
+
+
+--------------------------------------------------------------------------------
+3. AUTOREFRACTOR VIEWPORT
+--------------------------------------------------------------------------------
+
+DOCTOR:
+"Please place your chin on the rest and look into the screen. Keep looking at the hot air balloon."
+
+DOCTOR (Eye Switch):
+"Perfect. Now looking at your left eye, keep looking at the balloon."
+
+DOCTOR (Finished):
+"Objective measurements complete. You can step back."
+
+
+--------------------------------------------------------------------------------
+4. NCT TONOMETER VIEWPORT (AIR PUFF)
+--------------------------------------------------------------------------------
+
+DOCTOR:
+"Now look at the small red dot in the center of the ring. You'll feel a tiny puff of air."
+
+DOCTOR (Eye Switch):
+"Don't blink, now checking the left eye."
+
+DOCTOR (Finished):
+"All done with eye pressure, thank you."
+
+
+--------------------------------------------------------------------------------
+5. PHOROPTER EXAM ROOM (SUBJECTIVE REFRACTION & VISUAL ACUITY)
+--------------------------------------------------------------------------------
+
+DOCTOR (History Question):
+"Have you been experiencing any vision issues lately?"
+
+PATIENT COMPLAINTS (Select one at random):
+
+  Complaint Option 1:
+  "My distance vision has gotten pretty blurry lately, especially when driving at night."
+
+  Complaint Option 2:
+  "I've been experiencing mild headaches when reading books or looking at my phone screen for too long."
+
+  Complaint Option 3:
+  "Road signs have been looking fuzzy until I get really close to them."
+
+  Complaint Option 4:
+  "Everything in the distance is slightly out of focus, and I keep squinting to make out details."
+
+  Complaint Option 5:
+  "I feel like my current prescription isn't quite as sharp as it used to be. Things feel slightly smeared."
+
+
+DOCTOR (Visual Acuity Request):
+"Please read the lowest line you can see."
+
+
+PATIENT READS SNELLEN LINES (Clean, successful reads):
+
+  Patient Reading Line 200:
+  "E"
+
+  Patient Reading Line 100:
+  "F P"
+
+  Patient Reading Line 70:
+  "T O Z"
+
+  Patient Reading Line 50:
+  "L P E D"
+
+  Patient Reading Line 40:
+  "P E C F D"
+
+  Patient Reading Line 30:
+  "E D F C Z P"
+
+  Patient Reading Line 25:
+  "F E L O P Z D"
+
+  Patient Reading Line 20:
+  "D E F P O T E C"
+
+  Patient Reading Line 15:
+  "L E F O D P C T"
+
+
+PATIENT BLURRY READ LIMIT (Too blurry/small read):
+"It's too small and blurry. I can't read that line."
+
+
+DOCTOR (Lens Choice Question):
+"Which is better: choice 1, or choice 2?"
+
+
+PATIENT LENS CHOICE FEEDBACK:
+
+  Feedback Option 1 (Choice 1 is better):
+  "Choice 1 is noticeably sharper."
+
+  Feedback Option 2 (Choice 2 is better):
+  "Choice 2 is noticeably sharper."
+
+  Feedback Option 3 (Lenses are equal):
+  "They look about the same to me."

@@ -1,0 +1,8 @@
+{
+  "appId": "com.eyeexam.simulator",
+  "appName": "OptoSim 3D",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
