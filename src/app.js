@@ -728,6 +728,48 @@ function setupEventListeners() {
     window.addEventListener('touchmove', handleJoystickMove, { passive: false });
     window.addEventListener('touchend', handleJoystickEnd);
     window.addEventListener('touchcancel', handleJoystickEnd);
+
+    // Mouse event handlers for virtual joystick (desktop testing support)
+    let joystickMouseActive = false;
+    const handleJoystickMouseDown = (e) => {
+      e.preventDefault();
+      joystickMouseActive = true;
+      updateJoystickFromEvent(e);
+    };
+    const handleJoystickMouseMove = (e) => {
+      if (!joystickMouseActive) return;
+      updateJoystickFromEvent(e);
+    };
+    const handleJoystickMouseUp = () => {
+      if (joystickMouseActive) {
+        joystickMouseActive = false;
+        joystickKnob.style.transform = `translate(-50%, -50%)`;
+        keys.w = false;
+        keys.s = false;
+        keys.a = false;
+        keys.d = false;
+      }
+    };
+    const updateJoystickFromEvent = (e) => {
+      const rect = joystickBase.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      let dx = e.clientX - centerX;
+      let dy = e.clientY - centerY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > joystickMaxDist) {
+        dx = (dx / dist) * joystickMaxDist;
+        dy = (dy / dist) * joystickMaxDist;
+      }
+      joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+      keys.w = dy < -15;
+      keys.s = dy > 15;
+      keys.a = dx < -15;
+      keys.d = dx > 15;
+    };
+    joystickBase.addEventListener('mousedown', handleJoystickMouseDown);
+    window.addEventListener('mousemove', handleJoystickMouseMove);
+    window.addEventListener('mouseup', handleJoystickMouseUp);
   }
 
   // Window resizing
