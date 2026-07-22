@@ -55,25 +55,32 @@ async function build() {
   for (const file of jsFiles) {
     const filePath = path.join('src', file);
     if (fs.existsSync(filePath)) {
+      console.log(`  - Processing ${file}...`);
       const code = fs.readFileSync(filePath, 'utf8');
-      const minified = await minify(code, {
-        mangle: true,
-        compress: {
-          dead_code: true,
-          drop_debugger: true,
-          conditionals: true,
-          evaluate: true,
-          booleans: true,
-          loops: true,
-          unused: true,
-          hoist_funs: true,
-          keep_fargs: false,
-          hoist_vars: true,
-          if_return: true,
-          join_vars: true,
-        }
-      });
-      fs.writeFileSync(path.join('www/src', file), minified.code);
+      try {
+        const minified = await minify(code, {
+          mangle: true,
+          compress: {
+            dead_code: true,
+            drop_debugger: true,
+            conditionals: true,
+            evaluate: true,
+            booleans: true,
+            loops: true,
+            unused: true,
+            hoist_funs: true,
+            keep_fargs: false,
+            hoist_vars: true,
+            if_return: true,
+            join_vars: true,
+          }
+        });
+        fs.writeFileSync(path.join('www/src', file), minified.code);
+        console.log(`    Successfully minified ${file}.`);
+      } catch (err) {
+        console.error(`    Terser error in ${file}:`, err);
+        throw err;
+      }
     }
   }
 
