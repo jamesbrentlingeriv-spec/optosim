@@ -616,6 +616,120 @@ function setupEventListeners() {
     }
   });
 
+  // Touch Drag to look on mobile
+  let lastTouchX = 0;
+  let lastTouchY = 0;
+
+  window.addEventListener('touchstart', (e) => {
+    if (state === 'roam' && e.target === renderer.domElement) {
+      isMouseDown = true;
+      lastTouchX = e.touches[0].clientX;
+      lastTouchY = e.touches[0].clientY;
+    }
+    if (state === 'doctor-select') {
+      docSelectMouse.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
+      docSelectMouse.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
+    }
+  });
+
+  window.addEventListener('touchmove', (e) => {
+    if (isMouseDown && state === 'roam') {
+      const touchX = e.touches[0].clientX;
+      const touchY = e.touches[0].clientY;
+      const movementX = touchX - lastTouchX;
+      const movementY = touchY - lastTouchY;
+      
+      yaw -= movementX * mouseSpeed * 1.5;
+      pitch -= movementY * mouseSpeed * 1.5;
+      pitch = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, pitch));
+      
+      lastTouchX = touchX;
+      lastTouchY = touchY;
+    }
+    if (state === 'doctor-select') {
+      docSelectMouse.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
+      docSelectMouse.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
+    }
+  });
+
+  window.addEventListener('touchend', () => {
+    isMouseDown = false;
+  });
+
+  // Mobile virtual joystick logic
+  const joystickBase = document.getElementById('joystick-base');
+  const joystickKnob = document.getElementById('joystick-knob');
+  let joystickTouchId = null;
+  let joystickActive = false;
+  const joystickMaxDist = 40; // max knob offset
+
+  if (joystickBase && joystickKnob) {
+    const handleJoystickStart = (e) => {
+      e.preventDefault();
+      const touch = e.changedTouches[0];
+      joystickTouchId = touch.identifier;
+      joystickActive = true;
+    };
+
+    const handleJoystickMove = (e) => {
+      if (!joystickActive) return;
+      
+      let touch = null;
+      for (let i = 0; i < e.touches.length; i++) {
+        if (e.touches[i].identifier === joystickTouchId) {
+          touch = e.touches[i];
+          break;
+        }
+      }
+      if (!touch) return;
+
+      const rect = joystickBase.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      let dx = touch.clientX - centerX;
+      let dy = touch.clientY - centerY;
+
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > joystickMaxDist) {
+        dx = (dx / dist) * joystickMaxDist;
+        dy = (dy / dist) * joystickMaxDist;
+      }
+
+      joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+
+      // Translate joystick movement to keys object
+      keys.w = dy < -15;
+      keys.s = dy > 15;
+      keys.a = dx < -15;
+      keys.d = dx > 15;
+    };
+
+    const handleJoystickEnd = (e) => {
+      let touchFound = false;
+      for (let i = 0; i < e.touches.length; i++) {
+        if (e.touches[i].identifier === joystickTouchId) {
+          touchFound = true;
+          break;
+        }
+      }
+      if (!touchFound) {
+        joystickActive = false;
+        joystickTouchId = null;
+        joystickKnob.style.transform = `translate(-50%, -50%)`;
+        keys.w = false;
+        keys.s = false;
+        keys.a = false;
+        keys.d = false;
+      }
+    };
+
+    joystickBase.addEventListener('touchstart', handleJoystickStart, { passive: false });
+    window.addEventListener('touchmove', handleJoystickMove, { passive: false });
+    window.addEventListener('touchend', handleJoystickEnd);
+    window.addEventListener('touchcancel', handleJoystickEnd);
+  }
+
   // Window resizing
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
